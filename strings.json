@@ -1,0 +1,86 @@
+{
+  "title": "Aevocam",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect an Aevocam feed",
+        "description": "Choose how you want to enter credentials for this feed.",
+        "menu_options": {
+          "device_code": "Enter a device code",
+          "credentials": "Enter feed ID and passcode"
+        }
+      },
+      "device_code": {
+        "title": "Enter device code",
+        "description": "Paste the device code from Aevocam. It looks like 2.6/283526884921.",
+        "data": {
+          "device_code": "Device code"
+        }
+      },
+      "credentials": {
+        "title": "Enter feed credentials",
+        "description": "Enter the feed ID and passcode from Aevocam.",
+        "data": {
+          "feed_id": "Feed ID",
+          "passcode": "Passcode"
+        }
+      },
+      "details": {
+        "title": "Select a camera",
+        "description": "Choose the Home Assistant camera that should upload snapshots to this Aevocam feed.",
+        "data": {
+          "camera_entity_id": "Camera"
+        }
+      },
+      "name": {
+        "title": "Name this upload",
+        "description": "Choose a name for this Aevocam upload mapping.",
+        "data": {
+          "feed_name": "Name"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Aevocam snapshot upload",
+        "description": "Choose how you want to update this feed.",
+        "menu_options": {
+          "reconfigure_device_code": "Update with a device code",
+          "reconfigure_credentials": "Update feed ID and passcode"
+        }
+      },
+      "reconfigure_device_code": {
+        "title": "Update with device code",
+        "description": "Paste a device code and review the camera settings.",
+        "data": {
+          "device_code": "Device code",
+          "camera_entity_id": "Camera",
+          "feed_name": "Feed name"
+        }
+      },
+      "reconfigure_credentials": {
+        "title": "Update feed credentials",
+        "description": "Update the feed ID, passcode, camera, or feed name.",
+        "data": {
+          "feed_id": "Feed ID",
+          "passcode": "Passcode",
+          "camera_entity_id": "Camera",
+          "feed_name": "Feed name"
+        }
+      }
+    },
+    "error": {
+      "invalid_device_code": "The Aevocam device code is invalid. Use the form feed_id/passcode.",
+      "invalid_credentials": "The Aevocam feed ID or passcode is invalid.",
+      "invalid_configuration": "One or more configuration values are invalid."
+    },
+    "abort": {
+      "reconfigure_successful": "Aevocam was reconfigured successfully."
+    }
+  },
+  "entity": {
+    "button": {
+      "upload_snapshot": {
+        "name": "Upload snapshot"
+      }
+    }
+  }
+}
