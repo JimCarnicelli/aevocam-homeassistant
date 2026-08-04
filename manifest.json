@@ -1,11 +1,12 @@
 {
   "domain": "aevocam",
   "name": "Aevocam",
-  "codeowners": [],
+  "codeowners": ["@JimCarnicelli"],
   "config_flow": true,
   "documentation": "https://www.aevocam.com",
   "integration_type": "service",
   "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/JimCarnicelli/aevocam-homeassistant/issues",
   "requirements": [],
   "version": "0.1.0"
 }
