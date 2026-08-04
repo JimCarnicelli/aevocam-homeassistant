@@ -14,7 +14,7 @@ Custom [Home Assistant](https://www.home-assistant.io/) integration that uploads
 
 ### Manual
 
-1. Copy the contents of this repository into your Home Assistant `config/custom_components/aevocam/` directory (this repo uses `content_in_root` for HACS).
+1. Copy `custom_components/aevocam/` from this repository into your Home Assistant `config/custom_components/aevocam/` directory.
 2. Restart Home Assistant.
 3. Add the **Aevocam** integration from the UI.
 
