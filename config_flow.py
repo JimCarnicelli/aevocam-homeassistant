@@ -148,7 +148,7 @@ def suggested_feed_name(hass: HomeAssistant, camera_entity_id: str) -> str:
             .title()
         ) or "Camera"
 
-    return f"Upload snapshot: {camera_name}"
+    return f"Photo from {camera_name} to Aevocam"
 
 
 def build_reconfigure_camera_fields(entry_data: dict[str, Any]) -> dict[Any, Any]:
@@ -190,9 +190,9 @@ def normalize_entry_data(
     return data
 
 
-class AevocamConfigFlow(
+class AevocamConfigFlow(  # pyright: ignore
     config_entries.ConfigFlow,
-    domain=DOMAIN,
+    domain=DOMAIN,  # pyright: ignore
 ):
     """Handle an Aevocam config flow."""
 
