@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyaevocam"
+version = "0.1.0"
+description = "Async Python client for the Aevocam ingest API"
+readme = "custom_components/aevocam/pyaevocam/README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Aevocam" }]
+dependencies = [
+  "aiohttp>=3.9.0",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://www.aevocam.com"
+Issues = "https://github.com/JimCarnicelli/aevocam-homeassistant/issues"
+
+[tool.setuptools.packages.find]
+where = ["custom_components/aevocam"]
+include = ["pyaevocam*"]

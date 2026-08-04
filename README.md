@@ -27,6 +27,13 @@ During setup you will be asked for:
 
 Press the upload button entity to capture a frame from that camera and send it to your Aevocam feed.
 
+## Library split (`pyaevocam`)
+
+Aevocam API/protocol code lives in `custom_components/aevocam/pyaevocam/`.
+That package is structured so it can later be published to PyPI and depended
+on by a Core integration. For HACS today it is vendored in-tree; see
+`custom_components/aevocam/pyaevocam/README.md`.
+
 ## Support
 
 - Documentation: https://www.aevocam.com

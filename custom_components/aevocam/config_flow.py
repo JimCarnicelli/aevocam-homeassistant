@@ -26,63 +26,11 @@ from .const import (
     CONF_UPLOAD_TOKEN,
     DOMAIN,
 )
-
-
-class InvalidCredentials(ValueError):
-    """Raised when Aevocam feed credentials are invalid."""
-
-
-def normalize_passcode(passcode: str) -> tuple[str | None, str]:
-    """Normalize a passcode, accepting a full device code paste.
-
-    Returns (feed_id_from_code_or_none, passcode_only).
-    """
-
-    passcode = passcode.strip()
-
-    if "/" not in passcode:
-        return None, passcode
-
-    feed_id, stripped = passcode.split("/", 1)
-    feed_id = feed_id.strip()
-    stripped = stripped.strip()
-
-    if not stripped:
-        raise InvalidCredentials("Passcode is missing")
-
-    return (feed_id or None), stripped
-
-
-def normalize_credentials(feed_id: str, passcode: str) -> dict[str, str]:
-    """Normalize feed ID and passcode from the config form."""
-
-    feed_id = feed_id.strip()
-    code_feed_id, passcode = normalize_passcode(passcode)
-
-    if code_feed_id and not feed_id:
-        feed_id = code_feed_id
-
-    if not feed_id or not passcode:
-        raise InvalidCredentials("Feed ID and passcode are required")
-
-    if "/" in feed_id:
-        raise InvalidCredentials("Feed ID must not contain '/'")
-
-    return {
-        CONF_FEED_ID: feed_id,
-        CONF_UPLOAD_TOKEN: passcode,
-    }
-
-
-def parse_device_code(value: str) -> dict[str, str]:
-    """Parse an Aevocam device code of the form feed_id/passcode."""
-
-    value = value.strip()
-
-    if "/" not in value:
-        raise InvalidCredentials("Device code must look like feed_id/passcode")
-
-    return normalize_credentials("", value)
+from .pyaevocam import (
+    AevocamInvalidCredentials,
+    normalize_credentials,
+    parse_device_code,
+)
 
 
 def build_credentials_schema(
@@ -180,8 +128,8 @@ def normalize_entry_data(
     data = {
         CONF_CAMERA_ENTITY_ID: camera_entity_id.strip(),
         CONF_FEED_NAME: feed_name.strip(),
-        CONF_FEED_ID: credentials[CONF_FEED_ID],
-        CONF_UPLOAD_TOKEN: credentials[CONF_UPLOAD_TOKEN],
+        CONF_FEED_ID: credentials.feed_id,
+        CONF_UPLOAD_TOKEN: credentials.upload_token,
     }
 
     if not all(data.values()):
@@ -225,12 +173,14 @@ class AevocamConfigFlow(  # pyright: ignore
 
         if user_input is not None:
             try:
-                self._parsed_credentials = parse_device_code(
-                    str(user_input[CONF_DEVICE_CODE])
-                )
-            except InvalidCredentials:
+                credentials = parse_device_code(str(user_input[CONF_DEVICE_CODE]))
+            except AevocamInvalidCredentials:
                 errors[CONF_DEVICE_CODE] = "invalid_device_code"
             else:
+                self._parsed_credentials = {
+                    CONF_FEED_ID: credentials.feed_id,
+                    CONF_UPLOAD_TOKEN: credentials.upload_token,
+                }
                 return await self.async_step_details()
 
         return self.async_show_form(
@@ -253,13 +203,17 @@ class AevocamConfigFlow(  # pyright: ignore
 
         if user_input is not None:
             try:
-                self._parsed_credentials = normalize_credentials(
+                credentials = normalize_credentials(
                     str(user_input[CONF_FEED_ID]),
                     str(user_input[CONF_PASSCODE]),
                 )
-            except InvalidCredentials:
+            except AevocamInvalidCredentials:
                 errors["base"] = "invalid_credentials"
             else:
+                self._parsed_credentials = {
+                    CONF_FEED_ID: credentials.feed_id,
+                    CONF_UPLOAD_TOKEN: credentials.upload_token,
+                }
                 return await self.async_step_details()
 
         return self.async_show_form(
@@ -308,7 +262,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     feed_id=self._parsed_credentials[CONF_FEED_ID],
                     passcode=self._parsed_credentials[CONF_UPLOAD_TOKEN],
                 )
-            except (InvalidCredentials, ValueError):
+            except (AevocamInvalidCredentials, ValueError):
                 errors["base"] = "invalid_configuration"
             else:
                 return self.async_create_entry(
@@ -353,10 +307,10 @@ class AevocamConfigFlow(  # pyright: ignore
                 data = normalize_entry_data(
                     camera_entity_id=str(user_input[CONF_CAMERA_ENTITY_ID]),
                     feed_name=str(user_input[CONF_FEED_NAME]),
-                    feed_id=parsed[CONF_FEED_ID],
-                    passcode=parsed[CONF_UPLOAD_TOKEN],
+                    feed_id=parsed.feed_id,
+                    passcode=parsed.upload_token,
                 )
-            except InvalidCredentials:
+            except AevocamInvalidCredentials:
                 errors[CONF_DEVICE_CODE] = "invalid_device_code"
             except ValueError:
                 errors["base"] = "invalid_configuration"
@@ -402,7 +356,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     feed_id=str(user_input[CONF_FEED_ID]),
                     passcode=str(user_input[CONF_PASSCODE]),
                 )
-            except InvalidCredentials:
+            except AevocamInvalidCredentials:
                 errors["base"] = "invalid_credentials"
             except ValueError:
                 errors["base"] = "invalid_configuration"

@@ -5,8 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from aiohttp import ClientError, ClientSession
-
 from homeassistant.components.button import ButtonEntity
 from homeassistant.components.camera import async_get_image
 from homeassistant.config_entries import ConfigEntry
@@ -21,12 +19,15 @@ from .const import (
     CONF_FEED_NAME,
     CONF_UPLOAD_TOKEN,
     DOMAIN,
-    build_upload_url,
+)
+from .pyaevocam import (
+    AevocamClient,
+    AevocamConnectionError,
+    AevocamTimeoutError,
+    AevocamUploadError,
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-UPLOAD_TIMEOUT_SECONDS = 30
 
 
 async def async_setup_entry(
@@ -37,49 +38,6 @@ async def async_setup_entry(
     """Set up the Aevocam button."""
 
     async_add_entities([AevocamUploadButton(hass, entry)])
-
-
-async def async_upload_image(
-    session: ClientSession,
-    *,
-    upload_url: str,
-    upload_token: str,
-    feed_id: str,
-    content_type: str,
-    image_bytes: bytes,
-) -> None:
-    """Upload raw image bytes to Aevocam.
-
-    Isolated so the HTTP contract can be adjusted in one place.
-    """
-
-    headers = {
-        "Authorization": f"Bearer {upload_token}",
-        "Content-Type": content_type,
-        "X-Aevocam-Feed-ID": feed_id,
-    }
-
-    async with asyncio.timeout(UPLOAD_TIMEOUT_SECONDS):
-        async with session.post(
-            upload_url,
-            data=image_bytes,
-            headers=headers,
-        ) as response:
-            if 200 <= response.status < 300:
-                return
-
-            response_preview = (await response.text())[:500]
-
-            _LOGGER.debug(
-                "Aevocam upload failure. Status: %s. Response: %s",
-                response.status,
-                response_preview,
-            )
-
-            raise HomeAssistantError(
-                "Aevocam rejected the snapshot "
-                f"with HTTP status {response.status}"
-            )
 
 
 class AevocamUploadButton(ButtonEntity):
@@ -121,8 +79,6 @@ class AevocamUploadButton(ButtonEntity):
 
         camera_entity_id = self._entry.data[CONF_CAMERA_ENTITY_ID]
         feed_id = self._entry.data[CONF_FEED_ID]
-        upload_token = self._entry.data[CONF_UPLOAD_TOKEN]
-        upload_url = build_upload_url(feed_id)
 
         try:
             image = await async_get_image(self.hass, camera_entity_id)
@@ -135,23 +91,25 @@ class AevocamUploadButton(ButtonEntity):
                 f"Could not obtain a snapshot from {camera_entity_id}"
             ) from err
 
-        session = async_get_clientsession(self.hass)
+        client = AevocamClient(
+            async_get_clientsession(self.hass),
+            feed_id=feed_id,
+            upload_token=self._entry.data[CONF_UPLOAD_TOKEN],
+        )
 
         try:
-            await async_upload_image(
-                session,
-                upload_url=upload_url,
-                upload_token=upload_token,
-                feed_id=feed_id,
-                content_type=image.content_type,
-                image_bytes=image.content,
+            await client.async_upload_image(image.content, image.content_type)
+        except AevocamUploadError as err:
+            _LOGGER.debug(
+                "Aevocam upload failure. Status: %s. Response: %s",
+                err.status,
+                err.response_preview,
             )
-        except HomeAssistantError:
-            raise
-        except TimeoutError as err:
-            raise HomeAssistantError("The Aevocam upload timed out") from err
-        except ClientError as err:
-            raise HomeAssistantError("Could not connect to Aevocam") from err
+            raise HomeAssistantError(str(err)) from err
+        except AevocamTimeoutError as err:
+            raise HomeAssistantError(str(err)) from err
+        except AevocamConnectionError as err:
+            raise HomeAssistantError(str(err)) from err
 
         _LOGGER.info(
             "Uploaded snapshot from %s to Aevocam feed %s",
