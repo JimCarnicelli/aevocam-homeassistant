@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -27,10 +28,37 @@ from .const import (
     DOMAIN,
 )
 from .pyaevocam import (
+    AevocamClient,
+    AevocamConnectionError,
     AevocamInvalidCredentials,
+    AevocamTimeoutError,
     normalize_credentials,
     parse_device_code,
 )
+
+
+async def async_validate_aevocam_credentials(
+    hass: HomeAssistant,
+    *,
+    feed_id: str,
+    upload_token: str,
+) -> None:
+    """Reach Aevocam and verify credentials are accepted."""
+
+    client = AevocamClient(
+        async_get_clientsession(hass),
+        feed_id=feed_id,
+        upload_token=upload_token,
+    )
+    await client.async_validate_credentials()
+
+
+def _connection_flow_error(err: Exception) -> str:
+    """Map a connection-related library exception to a config flow error key."""
+
+    if isinstance(err, (AevocamConnectionError, AevocamTimeoutError)):
+        return "cannot_connect"
+    return "unknown"
 
 
 def build_credentials_schema(
@@ -177,11 +205,24 @@ class AevocamConfigFlow(  # pyright: ignore
             except AevocamInvalidCredentials:
                 errors[CONF_DEVICE_CODE] = "invalid_device_code"
             else:
-                self._parsed_credentials = {
-                    CONF_FEED_ID: credentials.feed_id,
-                    CONF_UPLOAD_TOKEN: credentials.upload_token,
-                }
-                return await self.async_step_details()
+                try:
+                    await async_validate_aevocam_credentials(
+                        self.hass,
+                        feed_id=credentials.feed_id,
+                        upload_token=credentials.upload_token,
+                    )
+                except AevocamInvalidCredentials:
+                    errors["base"] = "invalid_credentials"
+                except (AevocamConnectionError, AevocamTimeoutError) as err:
+                    errors["base"] = _connection_flow_error(err)
+                except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
+                    errors["base"] = "unknown"
+                else:
+                    self._parsed_credentials = {
+                        CONF_FEED_ID: credentials.feed_id,
+                        CONF_UPLOAD_TOKEN: credentials.upload_token,
+                    }
+                    return await self.async_step_details()
 
         return self.async_show_form(
             step_id="device_code",
@@ -210,11 +251,24 @@ class AevocamConfigFlow(  # pyright: ignore
             except AevocamInvalidCredentials:
                 errors["base"] = "invalid_credentials"
             else:
-                self._parsed_credentials = {
-                    CONF_FEED_ID: credentials.feed_id,
-                    CONF_UPLOAD_TOKEN: credentials.upload_token,
-                }
-                return await self.async_step_details()
+                try:
+                    await async_validate_aevocam_credentials(
+                        self.hass,
+                        feed_id=credentials.feed_id,
+                        upload_token=credentials.upload_token,
+                    )
+                except AevocamInvalidCredentials:
+                    errors["base"] = "invalid_credentials"
+                except (AevocamConnectionError, AevocamTimeoutError) as err:
+                    errors["base"] = _connection_flow_error(err)
+                except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
+                    errors["base"] = "unknown"
+                else:
+                    self._parsed_credentials = {
+                        CONF_FEED_ID: credentials.feed_id,
+                        CONF_UPLOAD_TOKEN: credentials.upload_token,
+                    }
+                    return await self.async_step_details()
 
         return self.async_show_form(
             step_id="credentials",
@@ -304,22 +358,35 @@ class AevocamConfigFlow(  # pyright: ignore
         if user_input is not None:
             try:
                 parsed = parse_device_code(str(user_input[CONF_DEVICE_CODE]))
-                data = normalize_entry_data(
-                    camera_entity_id=str(user_input[CONF_CAMERA_ENTITY_ID]),
-                    feed_name=str(user_input[CONF_FEED_NAME]),
-                    feed_id=parsed.feed_id,
-                    passcode=parsed.upload_token,
-                )
             except AevocamInvalidCredentials:
                 errors[CONF_DEVICE_CODE] = "invalid_device_code"
-            except ValueError:
-                errors["base"] = "invalid_configuration"
             else:
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data=data,
-                    title=data[CONF_FEED_NAME],
-                )
+                try:
+                    await async_validate_aevocam_credentials(
+                        self.hass,
+                        feed_id=parsed.feed_id,
+                        upload_token=parsed.upload_token,
+                    )
+                    data = normalize_entry_data(
+                        camera_entity_id=str(user_input[CONF_CAMERA_ENTITY_ID]),
+                        feed_name=str(user_input[CONF_FEED_NAME]),
+                        feed_id=parsed.feed_id,
+                        passcode=parsed.upload_token,
+                    )
+                except AevocamInvalidCredentials:
+                    errors["base"] = "invalid_credentials"
+                except (AevocamConnectionError, AevocamTimeoutError) as err:
+                    errors["base"] = _connection_flow_error(err)
+                except ValueError:
+                    errors["base"] = "invalid_configuration"
+                except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
+                    errors["base"] = "unknown"
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        data=data,
+                        title=data[CONF_FEED_NAME],
+                    )
 
         feed_id = str(entry.data.get(CONF_FEED_ID, ""))
         passcode = str(entry.data.get(CONF_UPLOAD_TOKEN, ""))
@@ -361,11 +428,24 @@ class AevocamConfigFlow(  # pyright: ignore
             except ValueError:
                 errors["base"] = "invalid_configuration"
             else:
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data=data,
-                    title=data[CONF_FEED_NAME],
-                )
+                try:
+                    await async_validate_aevocam_credentials(
+                        self.hass,
+                        feed_id=data[CONF_FEED_ID],
+                        upload_token=data[CONF_UPLOAD_TOKEN],
+                    )
+                except AevocamInvalidCredentials:
+                    errors["base"] = "invalid_credentials"
+                except (AevocamConnectionError, AevocamTimeoutError) as err:
+                    errors["base"] = _connection_flow_error(err)
+                except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
+                    errors["base"] = "unknown"
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        data=data,
+                        title=data[CONF_FEED_NAME],
+                    )
 
         return self.async_show_form(
             step_id="reconfigure_credentials",

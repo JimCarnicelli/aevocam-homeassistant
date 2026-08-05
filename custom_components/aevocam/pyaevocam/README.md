@@ -54,5 +54,9 @@ async with ClientSession() as session:
         feed_id=credentials.feed_id,
         upload_token=credentials.upload_token,
     )
+    await client.async_validate_credentials()
     await client.async_upload_image(image_bytes, "image/jpeg")
 ```
+
+`async_validate_credentials()` uses the same upload request with an empty
+body and `test-auth=true` on the query string.

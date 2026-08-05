@@ -70,7 +70,9 @@
     "error": {
       "invalid_device_code": "The Aevocam device code is invalid. Use the form feed_id/passcode.",
       "invalid_credentials": "The Aevocam feed ID or passcode is invalid.",
-      "invalid_configuration": "One or more configuration values are invalid."
+      "cannot_connect": "Could not connect to Aevocam. Check your network and try again.",
+      "invalid_configuration": "One or more configuration values are invalid.",
+      "unknown": "Unexpected error while talking to Aevocam."
     },
     "abort": {
       "reconfigure_successful": "Aevocam was reconfigured successfully."

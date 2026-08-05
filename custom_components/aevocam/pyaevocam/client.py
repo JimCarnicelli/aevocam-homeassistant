@@ -9,6 +9,7 @@ from aiohttp import ClientError, ClientSession
 
 from .exceptions import (
     AevocamConnectionError,
+    AevocamInvalidCredentials,
     AevocamTimeoutError,
     AevocamUploadError,
 )
@@ -16,11 +17,20 @@ from .exceptions import (
 INGEST_UPLOAD_ENDPOINT = "https://ingest-http.aevocam.com/upload"
 DEFAULT_UPLOAD_TIMEOUT_SECONDS = 30
 
+_AUTH_REJECTED_STATUSES = frozenset({401, 403})
 
-def build_upload_url(feed_id: str) -> str:
-    """Build the Aevocam HTTPS upload URL for a feed."""
 
-    return f"{INGEST_UPLOAD_ENDPOINT}?{urlencode({'feed': feed_id})}"
+def build_upload_url(feed_id: str, *, test_auth: bool = False) -> str:
+    """Build the Aevocam HTTPS upload URL for a feed.
+
+    When ``test_auth`` is true, the ingest service ignores the body and
+    responds solely based on whether the credentials are valid.
+    """
+
+    params: dict[str, str] = {"feed": feed_id}
+    if test_auth:
+        params["test-auth"] = "true"
+    return f"{INGEST_UPLOAD_ENDPOINT}?{urlencode(params)}"
 
 
 class AevocamClient:
@@ -44,7 +54,6 @@ class AevocamClient:
         self._feed_id = feed_id
         self._upload_token = upload_token
         self._upload_timeout = upload_timeout
-        self._upload_url = build_upload_url(feed_id)
 
     @property
     def feed_id(self) -> str:
@@ -52,12 +61,44 @@ class AevocamClient:
 
         return self._feed_id
 
+    async def async_validate_credentials(self) -> None:
+        """Verify credentials via the upload endpoint with ``test-auth=true``.
+
+        Same request shape as ``async_upload_image``; only differences are an
+        empty body and the ``test-auth=true`` query parameter.
+
+        * 2xx → credentials accepted
+        * 401 / 403 → ``AevocamInvalidCredentials``
+        * other / network → connection errors
+        """
+
+        try:
+            await self.async_upload_image(
+                b"",
+                "application/octet-stream",
+                test_auth=True,
+            )
+        except AevocamUploadError as err:
+            if err.status in _AUTH_REJECTED_STATUSES:
+                raise AevocamInvalidCredentials(
+                    "Aevocam rejected the feed credentials"
+                ) from err
+            raise AevocamConnectionError(
+                "Unexpected response while validating Aevocam "
+                f"credentials (HTTP {err.status}): {err.response_preview}"
+            ) from err
+
     async def async_upload_image(
         self,
         image_bytes: bytes,
         content_type: str,
+        *,
+        test_auth: bool = False,
     ) -> None:
         """Upload raw image bytes to Aevocam.
+
+        When ``test_auth`` is true, the server ignores the body and responds
+        based only on credential validity.
 
         Raises:
             AevocamTimeoutError: Request timed out.
@@ -74,7 +115,7 @@ class AevocamClient:
         try:
             async with asyncio.timeout(self._upload_timeout):
                 async with self._session.post(
-                    self._upload_url,
+                    build_upload_url(self._feed_id, test_auth=test_auth),
                     data=image_bytes,
                     headers=headers,
                 ) as response:
