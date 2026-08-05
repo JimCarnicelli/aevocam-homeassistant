@@ -7,21 +7,18 @@ import logging
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.components.camera import async_get_image
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from . import AevocamConfigEntry
 from .const import (
     CONF_CAMERA_ENTITY_ID,
     CONF_FEED_ID,
     CONF_FEED_NAME,
-    CONF_UPLOAD_TOKEN,
     DOMAIN,
 )
 from .pyaevocam import (
-    AevocamClient,
     AevocamConnectionError,
     AevocamTimeoutError,
     AevocamUploadError,
@@ -32,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: AevocamConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Aevocam button."""
@@ -50,7 +47,7 @@ class AevocamUploadButton(ButtonEntity):
     def __init__(
         self,
         hass: HomeAssistant,
-        entry: ConfigEntry,
+        entry: AevocamConfigEntry,
     ) -> None:
         """Initialize the button."""
 
@@ -79,6 +76,7 @@ class AevocamUploadButton(ButtonEntity):
 
         camera_entity_id = self._entry.data[CONF_CAMERA_ENTITY_ID]
         feed_id = self._entry.data[CONF_FEED_ID]
+        client = self._entry.runtime_data
 
         try:
             image = await async_get_image(self.hass, camera_entity_id)
@@ -90,12 +88,6 @@ class AevocamUploadButton(ButtonEntity):
             raise HomeAssistantError(
                 f"Could not obtain a snapshot from {camera_entity_id}"
             ) from err
-
-        client = AevocamClient(
-            async_get_clientsession(self.hass),
-            feed_id=feed_id,
-            upload_token=self._entry.data[CONF_UPLOAD_TOKEN],
-        )
 
         try:
             await client.async_upload_image(image.content, image.content_type)
