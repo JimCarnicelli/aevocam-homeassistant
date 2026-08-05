@@ -15,6 +15,9 @@
         "description": "Paste the device code from Aevocam. It looks like 2.6/283526884921.",
         "data": {
           "device_code": "Device code"
+        },
+        "data_description": {
+          "device_code": "The combined feed ID and passcode shown in Aevocam, separated by a slash."
         }
       },
       "credentials": {
@@ -23,6 +26,10 @@
         "data": {
           "feed_id": "Feed ID",
           "passcode": "Passcode"
+        },
+        "data_description": {
+          "feed_id": "The Aevocam feed identifier for this upload target.",
+          "passcode": "The passcode for this feed, used to authorize uploads."
         }
       },
       "details": {
@@ -30,6 +37,9 @@
         "description": "Choose the Home Assistant camera that should upload snapshots to this Aevocam feed.",
         "data": {
           "camera_entity_id": "Camera"
+        },
+        "data_description": {
+          "camera_entity_id": "Snapshots are taken from this camera when you press the upload button."
         }
       },
       "name": {
@@ -37,6 +47,9 @@
         "description": "Choose a name for this Aevocam upload mapping.",
         "data": {
           "feed_name": "Name"
+        },
+        "data_description": {
+          "feed_name": "A friendly name shown in Home Assistant for this feed mapping."
         }
       },
       "reconfigure": {
@@ -54,6 +67,11 @@
           "device_code": "Device code",
           "camera_entity_id": "Camera",
           "feed_name": "Feed name"
+        },
+        "data_description": {
+          "device_code": "The combined feed ID and passcode shown in Aevocam, separated by a slash.",
+          "camera_entity_id": "Snapshots are taken from this camera when you press the upload button.",
+          "feed_name": "A friendly name shown in Home Assistant for this feed mapping."
         }
       },
       "reconfigure_credentials": {
@@ -64,6 +82,12 @@
           "passcode": "Passcode",
           "camera_entity_id": "Camera",
           "feed_name": "Feed name"
+        },
+        "data_description": {
+          "feed_id": "The Aevocam feed identifier for this upload target.",
+          "passcode": "The passcode for this feed, used to authorize uploads.",
+          "camera_entity_id": "Snapshots are taken from this camera when you press the upload button.",
+          "feed_name": "A friendly name shown in Home Assistant for this feed mapping."
         }
       }
     },
@@ -75,6 +99,7 @@
       "unknown": "Unexpected error while talking to Aevocam."
     },
     "abort": {
+      "already_configured": "This Aevocam feed is already configured.",
       "reconfigure_successful": "Aevocam was reconfigured successfully."
     }
   },
