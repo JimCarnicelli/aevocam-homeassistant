@@ -25,7 +25,6 @@ from .const import (
     CONF_FEED_ID,
     CONF_FEED_NAME,
     CONF_PASSCODE,
-    CONF_UPLOAD_TOKEN,
     DOMAIN,
 )
 from .pyaevocam import (
@@ -42,14 +41,14 @@ async def async_validate_aevocam_credentials(
     hass: HomeAssistant,
     *,
     feed_id: str,
-    upload_token: str,
+    passcode: str,
 ) -> None:
     """Reach Aevocam and verify credentials are accepted."""
 
     client = AevocamClient(
         async_get_clientsession(hass),
         feed_id=feed_id,
-        upload_token=upload_token,
+        passcode=passcode,
     )
     await client.async_validate_credentials()
 
@@ -164,7 +163,7 @@ def normalize_entry_data(
         CONF_CAMERA_ENTITY_ID: camera_entity_id.strip(),
         CONF_FEED_NAME: feed_name.strip(),
         CONF_FEED_ID: credentials.feed_id,
-        CONF_UPLOAD_TOKEN: credentials.upload_token,
+        CONF_PASSCODE: credentials.passcode,
     }
 
     if not all(data.values()):
@@ -237,7 +236,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     await async_validate_aevocam_credentials(
                         self.hass,
                         feed_id=credentials.feed_id,
-                        upload_token=credentials.upload_token,
+                        passcode=credentials.passcode,
                     )
                 except AevocamInvalidCredentials:
                     errors["base"] = "invalid_credentials"
@@ -248,7 +247,7 @@ class AevocamConfigFlow(  # pyright: ignore
                 else:
                     self._parsed_credentials = {
                         CONF_FEED_ID: credentials.feed_id,
-                        CONF_UPLOAD_TOKEN: credentials.upload_token,
+                        CONF_PASSCODE: credentials.passcode,
                     }
                     return await self.async_step_details()
 
@@ -283,7 +282,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     await async_validate_aevocam_credentials(
                         self.hass,
                         feed_id=credentials.feed_id,
-                        upload_token=credentials.upload_token,
+                        passcode=credentials.passcode,
                     )
                 except AevocamInvalidCredentials:
                     errors["base"] = "invalid_credentials"
@@ -294,7 +293,7 @@ class AevocamConfigFlow(  # pyright: ignore
                 else:
                     self._parsed_credentials = {
                         CONF_FEED_ID: credentials.feed_id,
-                        CONF_UPLOAD_TOKEN: credentials.upload_token,
+                        CONF_PASSCODE: credentials.passcode,
                     }
                     return await self.async_step_details()
 
@@ -342,7 +341,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     camera_entity_id=camera_entity_id,
                     feed_name=str(user_input[CONF_FEED_NAME]),
                     feed_id=self._parsed_credentials[CONF_FEED_ID],
-                    passcode=self._parsed_credentials[CONF_UPLOAD_TOKEN],
+                    passcode=self._parsed_credentials[CONF_PASSCODE],
                 )
             except (AevocamInvalidCredentials, ValueError):
                 errors["base"] = "invalid_configuration"
@@ -397,13 +396,13 @@ class AevocamConfigFlow(  # pyright: ignore
                     await async_validate_aevocam_credentials(
                         self.hass,
                         feed_id=parsed.feed_id,
-                        upload_token=parsed.upload_token,
+                        passcode=parsed.passcode,
                     )
                     data = normalize_entry_data(
                         camera_entity_id=str(user_input[CONF_CAMERA_ENTITY_ID]),
                         feed_name=str(user_input[CONF_FEED_NAME]),
                         feed_id=parsed.feed_id,
-                        passcode=parsed.upload_token,
+                        passcode=parsed.passcode,
                     )
                 except AevocamInvalidCredentials:
                     errors["base"] = "invalid_credentials"
@@ -429,7 +428,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     )
 
         feed_id = str(entry.data.get(CONF_FEED_ID, ""))
-        passcode = str(entry.data.get(CONF_UPLOAD_TOKEN, ""))
+        passcode = str(entry.data.get(CONF_PASSCODE, ""))
         device_code = f"{feed_id}/{passcode}" if feed_id and passcode else ""
 
         return self.async_show_form(
@@ -472,7 +471,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     await async_validate_aevocam_credentials(
                         self.hass,
                         feed_id=data[CONF_FEED_ID],
-                        upload_token=data[CONF_UPLOAD_TOKEN],
+                        passcode=data[CONF_PASSCODE],
                     )
                 except AevocamInvalidCredentials:
                     errors["base"] = "invalid_credentials"
@@ -502,9 +501,7 @@ class AevocamConfigFlow(  # pyright: ignore
                     **build_credentials_schema(
                         {
                             CONF_FEED_ID: str(entry.data.get(CONF_FEED_ID, "")),
-                            CONF_PASSCODE: str(
-                                entry.data.get(CONF_UPLOAD_TOKEN, "")
-                            ),
+                            CONF_PASSCODE: str(entry.data.get(CONF_PASSCODE, "")),
                         }
                     ),
                     **build_reconfigure_camera_fields(dict(entry.data)),

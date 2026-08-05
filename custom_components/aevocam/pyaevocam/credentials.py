@@ -12,7 +12,7 @@ class AevocamCredentials:
     """Normalized Aevocam feed credentials."""
 
     feed_id: str
-    upload_token: str
+    passcode: str
 
 
 def normalize_passcode(passcode: str) -> tuple[str | None, str]:
@@ -51,7 +51,7 @@ def normalize_credentials(feed_id: str, passcode: str) -> AevocamCredentials:
     if "/" in feed_id:
         raise AevocamInvalidCredentials("Feed ID must not contain '/'")
 
-    return AevocamCredentials(feed_id=feed_id, upload_token=passcode)
+    return AevocamCredentials(feed_id=feed_id, passcode=passcode)
 
 
 def parse_device_code(value: str) -> AevocamCredentials:

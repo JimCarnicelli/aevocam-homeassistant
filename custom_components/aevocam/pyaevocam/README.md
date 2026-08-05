@@ -29,7 +29,7 @@ from pyaevocam import AevocamClient
 client = AevocamClient(
     async_get_clientsession(hass),
     feed_id=feed_id,
-    upload_token=token,
+    passcode=passcode,
 )
 await client.async_upload_image(image_bytes, content_type)
 ```
@@ -52,7 +52,7 @@ async with ClientSession() as session:
     client = AevocamClient(
         session,
         feed_id=credentials.feed_id,
-        upload_token=credentials.upload_token,
+        passcode=credentials.passcode,
     )
     await client.async_validate_credentials()
     await client.async_upload_image(image_bytes, "image/jpeg")

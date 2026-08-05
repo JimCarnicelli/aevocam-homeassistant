@@ -21,7 +21,6 @@ from custom_components.aevocam.const import (
     CONF_FEED_ID,
     CONF_FEED_NAME,
     CONF_PASSCODE,
-    CONF_UPLOAD_TOKEN,
     DOMAIN,
 )
 from custom_components.aevocam.pyaevocam import (
@@ -411,7 +410,7 @@ async def test_async_validate_aevocam_credentials(hass: HomeAssistant) -> None:
         await async_validate_aevocam_credentials(
             hass,
             feed_id=TEST_FEED_ID,
-            upload_token=TEST_PASSCODE,
+            passcode=TEST_PASSCODE,
         )
 
     mock_client_cls.assert_called_once()
@@ -452,7 +451,7 @@ async def test_reconfigure_device_code_success(
         CONF_CAMERA_ENTITY_ID: "camera.garage",
         CONF_FEED_NAME: "Garage feed",
         CONF_FEED_ID: TEST_FEED_ID,
-        CONF_UPLOAD_TOKEN: TEST_PASSCODE,
+        CONF_PASSCODE: TEST_PASSCODE,
     }
     assert mock_config_entry.unique_id == f"{TEST_FEED_ID}_camera.garage"
     assert mock_config_entry.title == "Garage feed"
@@ -582,7 +581,7 @@ async def test_reconfigure_credentials_success(
         CONF_CAMERA_ENTITY_ID: "camera.driveway",
         CONF_FEED_NAME: "Driveway feed",
         CONF_FEED_ID: "3.1",
-        CONF_UPLOAD_TOKEN: "999888777666",
+        CONF_PASSCODE: "999888777666",
     }
     assert mock_config_entry.unique_id == "3.1_camera.driveway"
 
@@ -700,7 +699,7 @@ async def test_reconfigure_unique_id_collision(
             CONF_CAMERA_ENTITY_ID: "camera.garage",
             CONF_FEED_NAME: "Other",
             CONF_FEED_ID: TEST_FEED_ID,
-            CONF_UPLOAD_TOKEN: "111222333444",
+            CONF_PASSCODE: "111222333444",
         },
         unique_id=f"{TEST_FEED_ID}_camera.garage",
     )

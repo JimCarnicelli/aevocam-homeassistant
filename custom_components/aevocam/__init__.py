@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_FEED_ID, CONF_UPLOAD_TOKEN, PLATFORMS
+from .const import CONF_FEED_ID, CONF_PASSCODE, PLATFORMS
 from .pyaevocam import (
     AevocamClient,
     AevocamConnectionError,
@@ -27,7 +27,7 @@ async def async_setup_entry(
     client = AevocamClient(
         async_get_clientsession(hass),
         feed_id=entry.data[CONF_FEED_ID],
-        upload_token=entry.data[CONF_UPLOAD_TOKEN],
+        passcode=entry.data[CONF_PASSCODE],
     )
 
     try:

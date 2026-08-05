@@ -45,14 +45,14 @@ class AevocamClient:
         session: ClientSession,
         *,
         feed_id: str,
-        upload_token: str,
+        passcode: str,
         upload_timeout: float = DEFAULT_UPLOAD_TIMEOUT_SECONDS,
     ) -> None:
         """Initialize the client."""
 
         self._session = session
         self._feed_id = feed_id
-        self._upload_token = upload_token
+        self._passcode = passcode
         self._upload_timeout = upload_timeout
 
     @property
@@ -107,7 +107,7 @@ class AevocamClient:
         """
 
         headers = {
-            "Authorization": f"Bearer {self._upload_token}",
+            "Authorization": f"Bearer {self._passcode}",
             "Content-Type": content_type,
             "X-Aevocam-Feed-ID": self._feed_id,
         }

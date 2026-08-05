@@ -11,6 +11,5 @@ CONF_DEVICE_CODE = "device_code"
 CONF_FEED_ID = "feed_id"
 CONF_FEED_NAME = "feed_name"
 CONF_PASSCODE = "passcode"
-CONF_UPLOAD_TOKEN = "upload_token"
 
 DEFAULT_FEED_NAME = "Aevocam feed"
