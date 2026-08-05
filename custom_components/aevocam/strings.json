@@ -99,7 +99,7 @@
       "unknown": "Unexpected error while talking to Aevocam."
     },
     "abort": {
-      "already_configured": "This Aevocam feed is already configured.",
+      "already_configured": "This Aevocam feed and camera combination is already configured.",
       "reconfigure_successful": "Aevocam was reconfigured successfully."
     }
   },

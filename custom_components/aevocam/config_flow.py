@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     EntitySelector,
@@ -59,6 +60,12 @@ def _connection_flow_error(err: Exception) -> str:
     if isinstance(err, (AevocamConnectionError, AevocamTimeoutError)):
         return "cannot_connect"
     return "unknown"
+
+
+def build_entry_unique_id(feed_id: str, camera_entity_id: str) -> str:
+    """Build a config-entry unique ID from feed and source camera."""
+
+    return f"{feed_id}_{camera_entity_id}"
 
 
 def build_credentials_schema(
@@ -179,6 +186,27 @@ class AevocamConfigFlow(  # pyright: ignore
 
         self._parsed_credentials: dict[str, str] = {}
         self._camera_entity_id: str | None = None
+
+    async def _async_set_unique_entry_id(
+        self,
+        feed_id: str,
+        camera_entity_id: str,
+    ) -> None:
+        """Bind this flow to a feed+camera pair; abort if another entry owns it."""
+
+        unique_id = build_entry_unique_id(feed_id, camera_entity_id)
+        await self.async_set_unique_id(unique_id)
+        existing = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, unique_id
+        )
+        if existing is None:
+            return
+        if (
+            self.source == config_entries.SOURCE_RECONFIGURE
+            and existing.entry_id == self._get_reconfigure_entry().entry_id
+        ):
+            return
+        raise AbortFlow("already_configured")
 
     async def async_step_user(
         self,
@@ -319,6 +347,10 @@ class AevocamConfigFlow(  # pyright: ignore
             except (AevocamInvalidCredentials, ValueError):
                 errors["base"] = "invalid_configuration"
             else:
+                await self._async_set_unique_entry_id(
+                    data[CONF_FEED_ID],
+                    data[CONF_CAMERA_ENTITY_ID],
+                )
                 return self.async_create_entry(
                     title=data[CONF_FEED_NAME],
                     data=data,
@@ -382,10 +414,18 @@ class AevocamConfigFlow(  # pyright: ignore
                 except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
                     errors["base"] = "unknown"
                 else:
+                    await self._async_set_unique_entry_id(
+                        data[CONF_FEED_ID],
+                        data[CONF_CAMERA_ENTITY_ID],
+                    )
                     return self.async_update_reload_and_abort(
                         entry,
                         data=data,
                         title=data[CONF_FEED_NAME],
+                        unique_id=build_entry_unique_id(
+                            data[CONF_FEED_ID],
+                            data[CONF_CAMERA_ENTITY_ID],
+                        ),
                     )
 
         feed_id = str(entry.data.get(CONF_FEED_ID, ""))
@@ -441,10 +481,18 @@ class AevocamConfigFlow(  # pyright: ignore
                 except Exception:  # noqa: BLE001 - surface unexpected failures in the UI
                     errors["base"] = "unknown"
                 else:
+                    await self._async_set_unique_entry_id(
+                        data[CONF_FEED_ID],
+                        data[CONF_CAMERA_ENTITY_ID],
+                    )
                     return self.async_update_reload_and_abort(
                         entry,
                         data=data,
                         title=data[CONF_FEED_NAME],
+                        unique_id=build_entry_unique_id(
+                            data[CONF_FEED_ID],
+                            data[CONF_CAMERA_ENTITY_ID],
+                        ),
                     )
 
         return self.async_show_form(
