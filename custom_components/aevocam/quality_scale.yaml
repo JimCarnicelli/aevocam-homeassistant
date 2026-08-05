@@ -14,7 +14,7 @@ rules:
     status: todo
     comment: Local brand icons exist; still need a home-assistant/brands PR for Core.
   common-modules: done
-  config-flow-test-coverage: todo
+  config-flow-test-coverage: done
   config-flow: done
   dependency-transparency:
     status: todo

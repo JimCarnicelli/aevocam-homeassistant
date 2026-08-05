@@ -30,3 +30,16 @@ Issues = "https://github.com/JimCarnicelli/aevocam-homeassistant/issues"
 [tool.setuptools.packages.find]
 where = ["custom_components/aevocam"]
 include = ["pyaevocam*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+source = ["custom_components/aevocam"]
+omit = ["custom_components/aevocam/pyaevocam/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 0
